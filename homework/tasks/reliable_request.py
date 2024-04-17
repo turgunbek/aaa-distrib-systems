@@ -20,8 +20,9 @@ async def do_reliable_request(url: str, observer: ResultsObserver) -> None:
     """
 
     async with httpx.AsyncClient() as client:
-        n_retry = 0
-        while n_retry < 5:
+        retry = 0
+        max_retries = 5
+        while retry < max_retries:
             try:
                 response = await client.get(url, timeout=15)
                 response.raise_for_status()
@@ -33,9 +34,8 @@ async def do_reliable_request(url: str, observer: ResultsObserver) -> None:
                 httpx.TimeoutException,
                 httpx.HTTPStatusError,
                 httpx.NetworkError,
-            ) as e:  # noqa: F841
-                # logging(e)
-                n_retry += 1
-                await asyncio.sleep(0.1 * n_retry)
+            ):
+                retry += 1
+                await asyncio.sleep(0.1 * retry)
                 continue
         return

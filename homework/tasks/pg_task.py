@@ -53,24 +53,18 @@ class ItemStorage:
         """
         # Don't use str-formatting, query args should be escaped to avoid
         # sql injections https://habr.com/ru/articles/148151/.
-        if not items:
+
+        if len(items) == 0:
             return
 
-        values_insert_sql = ",".join(
-            f"(${4 * i + 1}, ${4 * i + 2}, ${4 * i + 3}, ${4 * i + 4})"
-            for i in range(len(items))
+        await self._pool.executemany(
+            """
+            INSERT INTO items (item_id, user_id, title, description)
+            VALUES ($1, $2, $3, $4);
+            """,
+            [(item.item_id, item.user_id, item.title, item.description)
+             for item in items]
         )
-
-        query = f"""
-        INSERT INTO items (item_id, user_id, title, description)
-        VALUES {values_insert_sql}
-        """
-
-        params = [
-            value
-            for item in items
-            for value in (item.item_id, item.user_id, item.title, item.description)
-        ]
 
     async def find_similar_items(
         self, user_id: int, title: str, description: str
